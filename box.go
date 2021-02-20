@@ -23,22 +23,6 @@ func (b Box) Draw() {
 	}
 }
 
-// IsInside returns if the point x, y is inside box B
-func (b Box) IsInside(x, y int) bool {
-	return b.x1 < x &&
-		   b.y1 < y &&
-		   b.x2 > x &&
-		   b.y2 > y;
-}
-
-// Move moves the Box b by x and y amount
-func (b *Box) Move(x, y int) {
-	b.x1 += x
-	b.x2 += x
-	b.y1 += y
-	b.y2 += y
-}
-
 
 ///////////////////////////////////////////////////////////////////////////////
 // Graphics Functions

@@ -288,12 +288,6 @@ func main() {
 
 
 	PlayGame()
-	// var game Game = Deal();
-	// for x := 0; x < NUM_PILES; x++ {
-	// 	fmt.Println(game.piles[x].Height())
-	// }
-	// // fmt.Println(game.piles[0].GetTopNCards(4))
-	// fmt.Println(game.piles[0].TopNMovable(1))
 }
 
 // PlayGame has the main loop for the game of solitaire.
