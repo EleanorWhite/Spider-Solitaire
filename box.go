@@ -68,7 +68,7 @@ func emitStr(s tcell.Screen, x1, y1, x2, y2 int, style tcell.Style, str string) 
 	y := y1
 	for _, c := range str {
 		s.SetContent(x, y, c, nil, style)
-		newX := (((x-x1)+1) % (y2-y1)) + x1
+		newX := (((x-x1)+1) % (x2-x1)) + x1
 		if newX <= x {
 			y++
 			if(y > y2) {

@@ -51,26 +51,44 @@ func main() {
     log.SetOutput(file)
 
 
-	PlayGame()
-}
-
-// PlayGame has the main loop for the game of solitaire.
-func PlayGame() {
-	var game Game = Deal();
-
 	s, err := tcell.NewScreen()
 	if err != nil {
 		log.Fatalf("Screen initialization failed: %+v", err)
 	}
-	// based on https://github.com/gdamore/tcell/blob/master/_demos/boxes.go
+	// Screen setup based on 
+	// https://github.com/gdamore/tcell/blob/master/_demos/boxes.go
 	if err = s.Init(); err != nil {
 		log.Fatalf( "%v\n", err)
 		os.Exit(1)
 	}
 
 	s.Clear();
-	game.Render(s, 1, 1);
 	s.Show();
+
+	for {	
+		PlayGame(s)
+		wait := true
+		for wait {
+			ev := s.PollEvent()
+			switch ev := ev.(type) {
+			case *tcell.EventKey:
+				switch ev.Key() {
+				case tcell.KeyEscape:
+					s.Fini()
+					return
+				case tcell.KeyEnter:
+					wait = false
+				}
+			}
+		}
+	}
+}
+
+// PlayGame has the main loop for the game of solitaire.
+func PlayGame(s tcell.Screen) {
+	var game Game = Deal();
+
+	
 
 	var gameWon bool = false
 
@@ -81,7 +99,8 @@ func PlayGame() {
 		s.Show();
 
 		if(gameWon) {
-			s.Fini()
+			RenderGameWon(s, 1, 1)
+			s.Show();
 			return
 		}
 
@@ -320,7 +339,7 @@ func (game *Game) Enter() bool {
 
 
 ///////////////////////////////////////////////////////////////////////////////
-// Utilities
+// Graphics
 ///////////////////////////////////////////////////////////////////////////////
 
 
@@ -362,7 +381,15 @@ func (game Game) Render(s tcell.Screen, x int, y int) {
 			style, "", true}
 		selBox.Draw()
 	}
-	
+}
+
+// RenderGameWon renders the message that the game was won.
+func RenderGameWon(s tcell.Screen, x int, y int) {
+	style := tcell.StyleDefault.Foreground(tcell.ColorWhite).Background(tcell.ColorGreen)
+	var box Box = Box{s, x, y, 
+		x+10*(CARD_WIDTH+1), y+2*CARD_HEIGHT+ 2, 
+		style, "You won! Press ESC to leave, and enter to restart", false}
+	box.Draw()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
