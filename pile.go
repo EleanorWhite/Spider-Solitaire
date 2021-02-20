@@ -5,11 +5,22 @@ import (
 	// "fmt"
 )
 
+///////////////////////////////////////////////////////////////////////////////
+// Data Types
+///////////////////////////////////////////////////////////////////////////////
+
+
 // Pile is one of the ten stacks of partially visible cards
 type Pile struct {
 	visible Deck;
 	invisible Deck;
 }
+
+
+///////////////////////////////////////////////////////////////////////////////
+// Functions to modify and get info about Piles
+///////////////////////////////////////////////////////////////////////////////
+
 
 // TopNMovable returns true if the top n cards in the visible
 // part of the Pile can be moved together. Cards can be moved
@@ -70,6 +81,11 @@ func (pile Pile) Render(s tcell.Screen, x int, y int, selected bool) {
 // Height returns the height of the pile on the screen. 
 // The unit is the y coordinate used by the Box struct.
 func (pile Pile) Height() int {
+	if (pile.IsEmpty()) {
+		// empty pile highlights should line up with the bottom
+		// card of the pile.
+		return 2  
+	}
 	return pile.invisible.Size() + pile.visible.Size()*2
 }
 

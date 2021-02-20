@@ -12,68 +12,113 @@ const NUM_PILES = 10;
 const CARD_WIDTH = 11;
 const CARD_HEIGHT = 7;
 
+///////////////////////////////////////////////////////////////////////////////
+// Data Types
+///////////////////////////////////////////////////////////////////////////////
+
+
 // Game contains all info about the current game
 type Game struct {
-	deck Deck;
-	piles [NUM_PILES]Pile;
+	deck Deck; // The remaining deck which has cards not yet on piles
+	piles [NUM_PILES]Pile; 
 	highlighted Selected; // which card the cursor is over
-	toMove bool; // whether the user is trying to move this card
+	toMove bool; // whether the user has cards selected that they might move
 	selected Selected; // which card(s) are selected
 }
 
-// Selected is a description of what is currently highlighted by the user
+// Selected is a description of cards currently selected/highlighted
+// by the user
 type Selected struct {
 	x int; // which pile is highlighted
 	y int; // whether deck is highlighted (0), or pile is highlighted (1)
 	numCards int; // How many cards in a pile are highlighted
 }
 
-// Render renders the full current game
-func (game Game) Render(s tcell.Screen, x int, y int) {
-	if (!game.deck.IsEmpty()) {
-		game.deck.cards[0].RenderFlipped(s, x, y, (game.highlighted.y== 0))
-	}
-	for i := 0; i < NUM_PILES; i++ {
-		// isSelected := false
-		// if (game.highlighted.y == 1 && game.highlighted.x == i) {
-		// 	isSelected = true
-		// }
-		game.piles[i].Render(s, x + (CARD_WIDTH+2)*i, y + CARD_HEIGHT + 2, false)
-	}
-	style := tcell.StyleDefault.Foreground(tcell.ColorBlack).Background(tcell.ColorWhite)
-	
-	hglt := game.highlighted
-	var higBoxX int = 1
-	var higBoxY int = 1
-	if (hglt.y == 1) {
-		higBoxX = x + hglt.x*(CARD_WIDTH+2)
-		distFromPileTop :=  game.piles[hglt.x].Height() - hglt.numCards*2
-		higBoxY = y + CARD_HEIGHT + 2 +distFromPileTop
-	}
-	var higBox Box = Box{s, higBoxX, higBoxY, 
-		higBoxX+CARD_WIDTH, higBoxY+CARD_HEIGHT + ((hglt.numCards-1)*2), 
-		style, "", true}
-	higBox.Draw()
 
-	if (game.toMove) {
-		sel := game.selected
-		style = tcell.StyleDefault.Foreground(tcell.ColorYellow).Background(tcell.ColorYellow)
-		var selBoxX int = 1
-		var selBoxY int = 1
-		if (sel.y == 1) {
-			selBoxX = x + sel.x*(CARD_WIDTH+2)
-			distFromPileTop := game.piles[sel.x].Height() - (sel.numCards*2)
-			selBoxY = y + CARD_HEIGHT + 2 + distFromPileTop
-		}
-		var selBox Box = Box{s, selBoxX, selBoxY, 
-			selBoxX + CARD_WIDTH, selBoxY + CARD_HEIGHT + ((sel.numCards-1)*2), 
-			style, "", true}
-		selBox.Draw()
-	}
-	
+///////////////////////////////////////////////////////////////////////////////
+// Main loops and setup
+///////////////////////////////////////////////////////////////////////////////
+
+func main() {
+	fmt.Println("start")
+
+	// Set up logging to the file "debug.log"
+	file, err := os.OpenFile("debug.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer file.Close()
+    log.SetOutput(file)
+
+
+	PlayGame()
 }
 
-// CreateDeck creates the deck with all cards
+// PlayGame has the main loop for the game of solitaire.
+func PlayGame() {
+	var game Game = Deal();
+
+	s, err := tcell.NewScreen()
+	if err != nil {
+		log.Fatalf("Screen initialization failed: %+v", err)
+	}
+	// based on https://github.com/gdamore/tcell/blob/master/_demos/boxes.go
+	if err = s.Init(); err != nil {
+		log.Fatalf( "%v\n", err)
+		os.Exit(1)
+	}
+
+	s.Clear();
+	game.Render(s, 1, 1);
+	s.Show();
+
+	var gameWon bool = false
+
+	// for loop based on https://github.com/gdamore/tcell/blob/master/_demos/boxes.go
+	for {
+		s.Clear();
+		game.Render(s, 1, 1);
+		s.Show();
+
+		if(gameWon) {
+			s.Fini()
+			return
+		}
+
+		ev := s.PollEvent()
+		switch ev := ev.(type) {
+		case *tcell.EventKey:
+			switch ev.Key() {
+			case tcell.KeyEscape:
+				s.Fini()
+				return
+			case tcell.KeyCtrlL:
+				s.Sync()
+			case tcell.KeyUp, tcell.KeyDown: // up and down do same thing
+				game.Up()
+			case tcell.KeyRight:
+				game.Right()
+			case tcell.KeyLeft:
+				game.Left()
+			case tcell.KeyEnter:
+				gameWon = game.Enter()
+			}	
+		case *tcell.EventResize:
+			s.Sync()
+		}
+	}
+}
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+// Game state modification functions
+///////////////////////////////////////////////////////////////////////////////
+
+
+// CreateDeck creates the deck with all cards. The Deck
+// contains 2 full standard playing card decks (without 
+// jokers).
 func CreateDeck() Deck {
     var deck Deck = NewDeck(52)
 	// two full deck of cards
@@ -271,78 +316,53 @@ func (game *Game) Enter() bool {
 	return game.CheckWon();
 }
 
+
+
+
 ///////////////////////////////////////////////////////////////////////////////
-// Main function adapted from a function stolen from the internet
+// Utilities
 ///////////////////////////////////////////////////////////////////////////////
 
-func main() {
-	fmt.Println("start")
 
-	// Set up logging to the file "debug.log"
-	file, err := os.OpenFile("debug.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
-    if err != nil {
-        log.Fatal(err)
-    }
-    defer file.Close()
-    log.SetOutput(file)
-
-
-	PlayGame()
-}
-
-// PlayGame has the main loop for the game of solitaire.
-func PlayGame() {
-	var game Game = Deal();
-
-	s, err := tcell.NewScreen()
-	if err != nil {
-		log.Fatalf("Screen initialization failed: %+v", err)
+// Render renders the full current game
+func (game Game) Render(s tcell.Screen, x int, y int) {
+	if (!game.deck.IsEmpty()) {
+		game.deck.cards[0].RenderFlipped(s, x, y, (game.highlighted.y== 0))
 	}
-	// based on https://github.com/gdamore/tcell/blob/master/_demos/boxes.go
-	if err = s.Init(); err != nil {
-		log.Fatalf( "%v\n", err)
-		os.Exit(1)
+	for i := 0; i < NUM_PILES; i++ {
+		game.piles[i].Render(s, x + (CARD_WIDTH+2)*i, y + CARD_HEIGHT + 2, false)
 	}
+	style := tcell.StyleDefault.Foreground(tcell.ColorBlack).Background(tcell.ColorWhite)
+	
+	hglt := game.highlighted
+	var higBoxX int = 1
+	var higBoxY int = 1
+	if (hglt.y == 1) {
+		higBoxX = x + hglt.x*(CARD_WIDTH+2)
+		distFromPileTop :=  game.piles[hglt.x].Height() - hglt.numCards*2
+		higBoxY = y + CARD_HEIGHT + 2 +distFromPileTop
+	}
+	var higBox Box = Box{s, higBoxX, higBoxY, 
+		higBoxX+CARD_WIDTH, higBoxY+CARD_HEIGHT + ((hglt.numCards-1)*2), 
+		style, "", true}
+	higBox.Draw()
 
-	s.Clear();
-	game.Render(s, 1, 1);
-	s.Show();
-
-	var gameWon bool = false
-
-	// for loop based on https://github.com/gdamore/tcell/blob/master/_demos/boxes.go
-	for {
-		s.Clear();
-		game.Render(s, 1, 1);
-		s.Show();
-
-		if(gameWon) {
-			s.Fini()
-			return
+	if (game.toMove) {
+		sel := game.selected
+		style = tcell.StyleDefault.Foreground(tcell.ColorYellow).Background(tcell.ColorYellow)
+		var selBoxX int = 1
+		var selBoxY int = 1
+		if (sel.y == 1) {
+			selBoxX = x + sel.x*(CARD_WIDTH+2)
+			distFromPileTop := game.piles[sel.x].Height() - (sel.numCards*2)
+			selBoxY = y + CARD_HEIGHT + 2 + distFromPileTop
 		}
-
-		ev := s.PollEvent()
-		switch ev := ev.(type) {
-		case *tcell.EventKey:
-			switch ev.Key() {
-			case tcell.KeyEscape:
-				s.Fini()
-				return
-			case tcell.KeyCtrlL:
-				s.Sync()
-			case tcell.KeyUp, tcell.KeyDown: // up and down do same thing
-				game.Up()
-			case tcell.KeyRight:
-				game.Right()
-			case tcell.KeyLeft:
-				game.Left()
-			case tcell.KeyEnter:
-				gameWon = game.Enter()
-			}	
-		case *tcell.EventResize:
-			s.Sync()
-		}
+		var selBox Box = Box{s, selBoxX, selBoxY, 
+			selBoxX + CARD_WIDTH, selBoxY + CARD_HEIGHT + ((sel.numCards-1)*2), 
+			style, "", true}
+		selBox.Draw()
 	}
+	
 }
 
 ///////////////////////////////////////////////////////////////////////////////
