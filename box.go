@@ -31,7 +31,7 @@ func (b Box) IsInside(x, y int) bool {
 		   b.y2 > y;
 }
 
-// Move moves the box by x and y amount
+// Move moves the Box b by x and y amount
 func (b *Box) Move(x, y int) {
 	b.x1 += x
 	b.x2 += x
@@ -46,6 +46,7 @@ func (b *Box) Move(x, y int) {
 // Graphics functions taken and modified from 
 // https://github.com/gdamore/tcell/blob/master/_demos/mouse.go
 
+// drawEmptyBox draws the outline of a box.
 func drawEmptyBox(s tcell.Screen, x1, y1, x2, y2 int, style tcell.Style, text string) {
 	// Draw borders
 	for col := x1; col <= x2; col++ {
@@ -66,6 +67,8 @@ func drawEmptyBox(s tcell.Screen, x1, y1, x2, y2 int, style tcell.Style, text st
 	}
 }
 
+// emitStr puts string str in between the coordinates x1, y1 and x2, y2. 
+// Will truncate the str if it does not fit. 
 func emitStr(s tcell.Screen, x1, y1, x2, y2 int, style tcell.Style, str string) {
 	x := x1
 	y := y1
@@ -74,11 +77,15 @@ func emitStr(s tcell.Screen, x1, y1, x2, y2 int, style tcell.Style, str string) 
 		newX := (((x-x1)+1) % (y2-y1)) + x1
 		if newX <= x {
 			y++
+			if(y > y2) {
+				return
+			}
 		}
 		x = newX
 	}
 }
 
+// drawBox draws a filled in box containing the string str.
 func drawBox(s tcell.Screen, x1, y1, x2, y2 int, style tcell.Style, str string) {
 	if y2 < y1 {
 		y1, y2 = y2, y1

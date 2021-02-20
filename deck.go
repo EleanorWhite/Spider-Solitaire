@@ -8,8 +8,9 @@ import (
 	// "fmt"
 )
 
+// CardValue is an enum denoting the different possible
+// values of a playing card.
 type CardValue int
-
 const  (
 	NoneValue CardValue   = iota
 	Ace
@@ -26,14 +27,18 @@ const  (
 	Queen
 	King	
 )
-// TODO: MAKE CONST
-var ValueToString = []string{"None", "Ace", "Two", "Three", "Four", "Five", 
+// This function is a workaround to get a constant global array
+func getValueToString() []string {
+	return []string{"None", "Ace", "Two", "Three", "Four", "Five", 
 	"Six", "Seven", "Eight", "Nine", "Ten", "Jack","Queen","King"}
-var NUM_VALUES = len(ValueToString) - 1
+}
 
+// NUM_VALUES is the number of different possible values 
+// (not including NoneValue).
+var NUM_VALUES = int(King)
 
+// CardSuit is an enum denoting the possible suits of a playing card.
 type CardSuit int
-
 const (
 	NoneSuit  CardSuit = iota
 	Spades  
@@ -42,13 +47,20 @@ const (
 	Diamonds
 )
 
-var SuitToString = []string{"None", "Spades", "Hearts", "Clubs", "Diamonds"}
+// This function is a workaround to get a global constant array
+func getSuitToString() []string {
+	return []string{"None", "Spades", "Hearts", "Clubs", "Diamonds"}
+}
 
+// Card represents a single playing card.
 type Card struct {
 	suit CardSuit
 	value CardValue
 }
 
+// Deck represents a deck of playing cards, where cards
+// are drawn starting from the highest index.
+// The "top" of the deck is defined as the next ones to be drawn.
 type Deck struct {
 	cards []Card
 }
@@ -57,13 +69,15 @@ type Deck struct {
 // Card Stuff
 ///////////////////////////////////////////////////////////////////////////////
 
-func (c Card) toString() string {
-	return ValueToString[c.value] + " of " + SuitToString[c.suit]
+func (card Card) toString() string {
+	return getValueToString()[card.value] + 
+		" of " + getSuitToString()[card.suit]
 }
 func (cv CardValue) toString() string {
-	return ValueToString[cv] 
+	return getValueToString()[cv] 
 }
 
+// isBlank returns true iff the card has the NoneSuit and NoneValue.
 func (card Card) isBlank() bool {
 	if(card.suit == NoneSuit || card.value == NoneValue) { 
 		return true
@@ -71,6 +85,8 @@ func (card Card) isBlank() bool {
 	return false
 }
 
+// Render renders a single face-up card on the terminal screen, with the 
+// upper-left corner at point x, y.
 func (card Card) Render(s tcell.Screen, x int, y int, selected bool) {
 	color := tcell.ColorGreen;
 	if selected {
@@ -82,7 +98,8 @@ func (card Card) Render(s tcell.Screen, x int, y int, selected bool) {
 	box1.Draw();
 }
 
-
+// RenderFlipped renders a face-down card on the terminal screen, with
+// the upper-left corner at point x, y.
 func (card Card) RenderFlipped(s tcell.Screen, x int, y int, selected bool) {
 	color := tcell.ColorGreen;
 	if selected {
@@ -98,19 +115,23 @@ func (card Card) RenderFlipped(s tcell.Screen, x int, y int, selected bool) {
 // Deck Stuff
 ///////////////////////////////////////////////////////////////////////////////
 
+// IsEmpty return true iff deck has no cards.
 func (deck Deck) IsEmpty() bool {
 	return len(deck.cards) == 0
 }
 
+// Size returns the number of cards in deck.
 func (deck Deck) Size() int {
 	return len(deck.cards);
 }
 
+// Add puts card on the top of deck.
 func (deck *Deck) Add(card Card) {
 	if (card.isBlank()) { return }
 	deck.cards = append(deck.cards, card);
 }
 
+// Draw takes a card off the top of deck and returns it.
 func (deck *Deck) Draw() Card{
 	if (len(deck.cards) == 0) {
 		return Card{NoneSuit, NoneValue}
@@ -120,17 +141,9 @@ func (deck *Deck) Draw() Card{
 	return card
 }
 
-// func (deck *Deck) GetCardAtIndex(index int) Card{
-// 	card := deck.cards[index]
-// 	deck.cards[index] = deck.cards[len(deck.cards)-1]
-// 	deck.cards = deck.cards[:len(deck.cards)-1]
-// 	return card
-// }
-
-// PeekTopNCards returns a slice of the top n cards of a Deck.
-// Top is defined by the next ones to be drawn.
-// The Cards are not removed.
-func (deck *Deck) PeekTopNCards(n int) []Card{
+// PeekTopNCards returns a slice of the top n cards of Deck deck..
+// The Cards are not removed from deck.
+func (deck Deck) PeekTopNCards(n int) []Card{
 	length := len(deck.cards)
 	if (length < n) {
 		log.Fatalf("Asking for more cards than exist")
@@ -139,9 +152,8 @@ func (deck *Deck) PeekTopNCards(n int) []Card{
 }
 
 // GetTopNCards returns a slice of a new array containing
-// a copy of the top n cards of a Deck.
-// Top is defined by the next ones to be drawn.
-// The Cards are removed.
+// a copy of the top n cards of Deck deck.
+// The Cards are removed from deck.
 func (deck *Deck) GetTopNCards(n int) []Card{
 	length := len(deck.cards)
 	if (length < n) {
@@ -155,7 +167,9 @@ func (deck *Deck) GetTopNCards(n int) []Card{
 	return newTopN
 }
 
-func (deck *Deck) PeekNthCard(n int) Card {
+// PeekNthCard returns the nth Card from the top of deck.
+// The Card is not removed from deck.
+func (deck Deck) PeekNthCard(n int) Card {
 	// fmt.Println("n: ", n)
 	if (len(deck.cards) <= n) {
 		return Card{NoneSuit, NoneValue}
@@ -163,12 +177,43 @@ func (deck *Deck) PeekNthCard(n int) Card {
 	return deck.cards[len(deck.cards)- 1 - n]
 }
 
-func NewDeck(maxSize int) Deck {
+// NewDeck creates and returns a new empty Deck. 
+// initSize is the initial size of the underlying array
+// for the Deck, but the Deck will be resized to accommodate
+// cards as needed.
+func NewDeck(initSize int) Deck {
 	var deck Deck
-	deck.cards = make([]Card, 0, maxSize)
+	deck.cards = make([]Card, 0, initSize)
 	return deck
 }
 
+
+// Shuffle randomizes the order of deck.
+func (deck *Deck) Shuffle() {
+	rand.Seed(time.Now().UnixNano())
+	rand.Shuffle(len(deck.cards), deck.Swap)
+}
+
+// Swap swaps the cards in the indices fst and snd or the cards array.
+func (deck *Deck) Swap(fst int, snd int) {
+	deck.cards[fst], deck.cards[snd] = deck.cards[snd], deck.cards[fst]
+}
+
+// CardInDeck returns true if card is in deck.
+func (deck Deck)CardInDeck(card Card) bool {
+    for _, v := range deck.cards {
+        if v == card {
+            return true
+        }
+    }
+    return false
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Debug Utilities
+///////////////////////////////////////////////////////////////////////////////
+
+// ToString returns a string representing deck.
 func (deck *Deck) ToString() string {
 	if (len(deck.cards) == 0) { return "" }
 	var str string = ""
@@ -179,24 +224,10 @@ func (deck *Deck) ToString() string {
 	return str
 }
 
-func (deck *Deck) Shuffle() {
-	rand.Seed(time.Now().UnixNano())
-	rand.Shuffle(len(deck.cards), deck.Swap)
-}
 
-func (deck *Deck) Swap(fst int, snd int) {
-	deck.cards[fst], deck.cards[snd] = deck.cards[snd], deck.cards[fst]
-}
-
-func (deck Deck)CardInDeck(card Card) bool {
-    for _, v := range deck.cards {
-        if v == card {
-            return true
-        }
-    }
-    return false
-}
-
+///////////////////////////////////////////////////////////////////////////////
+// Graphics Function
+///////////////////////////////////////////////////////////////////////////////
 
 // Render renders a deck of cards face side up
 func (deck Deck) Render(s tcell.Screen, x int, y int, selected bool) {

@@ -141,7 +141,7 @@ func (game *Game) MoveCards() {
 	}
 }
 
-// returns true if the first 13 cards are a full stack
+// IsFullStack returns true if the first 13 cards are a full stack
 func IsFullStack(cards []Card) bool {
 	log.Print("IsFullStack!", len(cards), NUM_VALUES)
 	if (len(cards) < NUM_VALUES) {
@@ -165,6 +165,8 @@ func IsFullStack(cards []Card) bool {
 	return true
 }
 
+// CheckStacks looks for piles that contain a full stack of
+// cards, and deletes off the full stacks.
 func (game *Game) CheckStacks() {
 	log.Print("Checking stacks!")
 	for i := 0; i < NUM_PILES; i++ {
@@ -174,6 +176,8 @@ func (game *Game) CheckStacks() {
 	}
 }
 
+// CheckWon checks if there are no more cards and so the user
+// has won. Returns true is the user has won, and false otherwise.
 func (game *Game) CheckWon() bool {
 	for i := 0; i < NUM_PILES; i++ {
 		if !game.piles[i].IsEmpty() {
@@ -292,6 +296,7 @@ func main() {
 	// fmt.Println(game.piles[0].TopNMovable(1))
 }
 
+// PlayGame has the main loop for the game of solitaire.
 func PlayGame() {
 	var game Game = Deal();
 
@@ -345,110 +350,6 @@ func PlayGame() {
 		}
 	}
 }
-
-// TODO: delete
-func graphicsStuf() {
-	defStyle := tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.ColorReset)
-	boxStyle := tcell.StyleDefault.Foreground(tcell.ColorWhite).Background(tcell.ColorGreen)
-
-	// Initialize screen
-	s, err := tcell.NewScreen()
-	if err != nil {
-		log.Fatalf("%+v", err)
-	}
-	if err := s.Init(); err != nil {
-		log.Fatalf("%+v", err)
-	}
-	s.SetStyle(defStyle)
-	s.EnableMouse()
-	s.EnablePaste()
-	s.Clear()
-
-
-
-	// Draw initial boxes
-	box1 := Box{s, 1, 1, 42, 7, boxStyle, "Click and drag to draw a box", false}
-	box1.Draw();
-	//drawBox(s, 1, 1, 42, 7, boxStyle, "Click and drag to draw a box")
-	// drawBox(s, 5, 9, 32, 14, boxStyle, "Press C to reset")
-
-	// Event loop
-	ox, oy := -1, -1
-	quit := func() {
-		s.Fini()
-		os.Exit(0)
-	}
-	//label := ":("
-	//highlightedBox Box; 
-	for {
-		// Update screen
-		s.Show()
-
-		// Poll event
-		ev := s.PollEvent()
-
-		// Process event
-		switch ev := ev.(type) {
-		case *tcell.EventResize:
-			s.Sync()
-		case *tcell.EventKey:
-			if ev.Key() == tcell.KeyEscape || ev.Key() == tcell.KeyCtrlC {
-				quit()
-			} else if ev.Key() == tcell.KeyCtrlL {
-				s.Sync()
-			} else if ev.Rune() == 'C' || ev.Rune() == 'c' {
-				s.Clear()
-			}
-		case *tcell.EventMouse:
-			x, y := ev.Position()
-			button := ev.Buttons()
-			// Only process button events, not wheel events
-			button &= tcell.ButtonMask(0xff)
-
-			if button != tcell.ButtonNone && ox < 0 {
-				ox, oy = x, y
-				if (box1.IsInside(ox, oy)) {
-					box1.text = "Inside"
-					//drawBox(s, ox, oy, ox+10, oy+10, boxStyle, label)
-				} else {
-					box1.text = "Outside"
-				}
-			}
-			switch ev.Buttons() {
-			case tcell.ButtonNone:
-				if ox >= 0 {
-					//label := fmt.Sprintf("%d,%d to %d,%d", ox, oy, x, y)
-					//drawBox(s, ox, oy, x, y, boxStyle, label)
-					box1.Move(x-ox, y-oy)
-					box1.Draw();
-					ox, oy = -1, -1
-				}
-			}
-		}
-	}
-}
-
-// func main() {
-// 	// Initialize screen
-// 	s, err := tcell.NewScreen()
-// 	if err != nil {
-// 		log.Fatalf("%+v", err)
-// 	}
-// 	if err := s.Init(); err != nil {
-// 		log.Fatalf("%+v", err)
-// 	}
-
-// 	// Set default text style
-// 	defStyle := tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.ColorReset)
-// 	s.SetStyle(defStyle)
-
-// 	// Clear screen
-// 	s.Clear()
-
-// 	s.SetContent(0, 0, 'H', nil, defStyle)
-// 	s.SetContent(1, 0, 'i', nil, defStyle)
-// 	s.SetContent(2, 0, '!', nil, defStyle)
-// }
 
 ///////////////////////////////////////////////////////////////////////////////
 // Utilities

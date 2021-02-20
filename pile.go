@@ -32,11 +32,9 @@ func (pile Pile) TopNMovable(n int) bool {
 	return true
 }
 
-func (pile Pile) Height() int {
-	return pile.invisible.Size() + pile.visible.Size()*2
-}
-
-// if there are not n visible cards, return the None card
+// PeekNthCard returns the nth card from the top of the 
+// visible part of the pile. It returns a Card with NoneValue
+// and NoneSuit if there is not an nth card.
 func (pile Pile) PeekNthCard(n int) Card {
 	return pile.visible.PeekNthCard(n)
 }
@@ -53,6 +51,8 @@ func (pile *Pile) GetTopNCards(n int) []Card{
 	return moved
 }
 
+// IsEmpty returns true iff there are no cards in the pile 
+// (visible or invisible).
 func (pile Pile) IsEmpty() bool {
 	return pile.visible.IsEmpty() && pile.invisible.IsEmpty()
 }
@@ -65,6 +65,12 @@ func (pile Pile) IsEmpty() bool {
 func (pile Pile) Render(s tcell.Screen, x int, y int, selected bool) {
 	pile.invisible.RenderFlipped(s, x, y, selected)
 	pile.visible.Render(s, x, y + pile.invisible.Size(), selected)
+}
+
+// Height returns the height of the pile on the screen. 
+// The unit is the y coordinate used by the Box struct.
+func (pile Pile) Height() int {
+	return pile.invisible.Size() + pile.visible.Size()*2
 }
 
 
