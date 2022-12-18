@@ -115,7 +115,11 @@ func PlayGame(s tcell.Screen) {
 			case tcell.KeyLeft:
 				game.Left()
 			case tcell.KeyEnter:
-				gameWon = game.Enter()
+				gameWon = game.Select()
+			case tcell.KeyRune:
+				if ev.Rune() == ' ' {
+					gameWon = game.Select()
+				}
 			}
 		case *tcell.EventResize:
 			s.Sync()
@@ -273,14 +277,14 @@ func (game *Game) Right() {
 	game.highlighted.numCards = 1
 }
 
-// Enter makes the changes for the user pressing Enter.
-// When the deck is highlighted, Enter deals more cards.
-// When a pile is highlighted but not selected, Enter
+// Select makes the changes for the user pressing Select.
+// When the deck is highlighted, Select deals more cards.
+// When a pile is highlighted but not selected, Select
 // selects the top card.
 // When a pile is highlighted and cards from it are
-// selected, Enter selects one more card from that pile,
+// selected, Select selects one more card from that pile,
 // if allowed.
-func (game *Game) Enter() bool {
+func (game *Game) Select() bool {
 	if game.highlighted.y == 1 {
 		// The user has a pile highlighted
 		if !game.toMove {
