@@ -63,6 +63,7 @@ func main() {
 	s.Show()
 
 	for {
+		InstructionScreen(s)
 		PlayGame(s)
 		wait := true
 		for wait {
@@ -76,6 +77,27 @@ func main() {
 				case tcell.KeyEnter:
 					wait = false
 				}
+			}
+		}
+	}
+}
+
+func InstructionScreen(s tcell.Screen) {
+	emitStr(s, 5, 0, 200, 200, tcell.StyleDefault.Bold(true), "Spider Solitaire")
+	emitStr(s, 5, 1, 200, 200, tcell.StyleDefault, "Use arrow keys to move and spacebar to select or move a card")
+	emitStr(s, 5, 2, 200, 200, tcell.StyleDefault, "Press ESC to exit")
+	emitStr(s, 5, 3, 200, 200, tcell.StyleDefault, "Press any key to continue")
+	s.Show()
+	for {
+		ev := s.PollEvent()
+		switch ev := ev.(type) {
+		case *tcell.EventKey:
+			switch ev.Key() {
+			case tcell.KeyEscape:
+				s.Fini()
+				os.Exit(0)
+			default:
+				return
 			}
 		}
 	}
@@ -105,7 +127,7 @@ func PlayGame(s tcell.Screen) {
 			switch ev.Key() {
 			case tcell.KeyEscape:
 				s.Fini()
-				return
+				os.Exit(0)
 			case tcell.KeyCtrlL:
 				s.Sync()
 			case tcell.KeyUp, tcell.KeyDown: // up and down do same thing
